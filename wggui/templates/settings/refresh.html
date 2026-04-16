@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Refresh Settings - WireGuard GUI{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-slate-900">Refresh Settings</h1>
+    <p class="text-slate-500">Configure connection check interval</p>
+</div>
+
+<form action="{{ url_for('settings_refresh') }}" method="POST" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-4xl">
+    <div class="max-w-xs mb-6">
+        <label for="refresh_interval" class="block text-sm font-medium text-slate-700">Refresh rate (seconds)</label>
+        <input type="text" id="refresh_interval" name="refresh_interval" value="{{ settings.get('refresh_interval', '30') }}"
+            class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+    </div>
+    <p class="mt-2 text-sm text-slate-500">Interval to check connection status with <code class="text-primary-600">wg show</code></p>
+
+    <div class="max-w-xs mt-6">
+        <label for="disconnect_timeout" class="block text-sm font-medium text-slate-700">Disconnect timeout (seconds)</label>
+        <input type="text" id="disconnect_timeout" name="disconnect_timeout" value="{{ settings.get('disconnect_timeout', '600') }}"
+            class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+    </div>
+    <p class="mt-2 text-sm text-slate-500">Time without activity after which a peer is considered disconnected (default: 600)</p>
+
+    <div class="max-w-xs mt-6">
+        <label for="timezone" class="block text-sm font-medium text-slate-700">Timezone</label>
+        <select id="timezone" name="timezone"
+            class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="Europe/Madrid">Europe/Madrid (UTC+1)</option>
+            <option value="Europe/London">Europe/London (UTC+0)</option>
+            <option value="Europe/Paris">Europe/Paris (UTC+1)</option>
+            <option value="Europe/Berlin">Europe/Berlin (UTC+1)</option>
+            <option value="Europe/Rome">Europe/Rome (UTC+1)</option>
+            <option value="Europe/Amsterdam">Europe/Amsterdam (UTC+1)</option>
+            <option value="Europe/Moscow">Europe/Moscow (UTC+3)</option>
+            <option value="America/New_York">America/New_York (UTC-5)</option>
+            <option value="America/Chicago">America/Chicago (UTC-6)</option>
+            <option value="America/Denver">America/Denver (UTC-7)</option>
+            <option value="America/Los_Angeles">America/Los_Angeles (UTC-8)</option>
+            <option value="America/Mexico_City">America/Mexico_City (UTC-6)</option>
+            <option value="America/Sao_Paulo">America/Sao_Paulo (UTC-3)</option>
+            <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
+            <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
+            <option value="Asia/Singapore">Asia/Singapore (UTC+8)</option>
+            <option value="Asia/Dubai">Asia/Dubai (UTC+4)</option>
+            <option value="Asia/Kolkata">Asia/Kolkata (UTC+5:30)</option>
+            <option value="Australia/Sydney">Australia/Sydney (UTC+10)</option>
+            <option value="Pacific/Auckland">Pacific/Auckland (UTC+12)</option>
+        </select>
+    </div>
+    <p class="mt-2 text-sm text-slate-500">Timezone for displaying dates and times</p>
+
+    <div class="mt-6">
+        <button type="submit" class="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+            <i class="fas fa-save mr-2"></i>Save Refresh
+        </button>
+    </div>
+</form>
+
+<script>
+    document.getElementById('timezone').value = '{{ settings.get('timezone', 'Europe/Madrid') }}';
+</script>
+{% endblock %}

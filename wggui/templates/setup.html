@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Initial Setup - WireGuard GUI{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div class="text-center">
+            <div class="mx-auto h-24 w-24 rounded-2xl bg-primary-100 flex items-center justify-center overflow-hidden">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="WireGuard GUI" class="h-full w-full object-contain">
+            </div>
+            <h2 class="mt-6 text-3xl font-extrabold text-slate-900">
+                Initial Setup
+            </h2>
+            <p class="mt-2 text-sm text-slate-600">
+                Create the first admin user to get started
+            </p>
+        </div>
+
+        <div class="mt-8 bg-white py-8 px-6 shadow-xl rounded-2xl border border-slate-100">
+            <form class="space-y-6" method="POST">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-slate-700">
+                        Username
+                    </label>
+                    <div class="mt-1">
+                        <input id="username" name="username" type="text" required
+                            class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                            placeholder="admin">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-700">
+                        Password
+                    </label>
+                    <div class="mt-1">
+                        <input id="password" name="password" type="password" required minlength="6"
+                            class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                            placeholder="Minimum 6 characters">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="confirm_password" class="block text-sm font-medium text-slate-700">
+                        Confirm password
+                    </label>
+                    <div class="mt-1">
+                        <input id="confirm_password" name="confirm_password" type="password" required minlength="6"
+                            class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                            placeholder="Repeat password">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Create Administrator
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

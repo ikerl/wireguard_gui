@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - WireGuard GUI{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-slate-900">Settings</h1>
+    <p class="text-slate-500">WireGuard server and application settings</p>
+</div>
+
+<!-- Server Keys Section -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+    <button onclick="toggleSection('server-keys')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors rounded-t-xl">
+        <div class="flex items-center">
+            <i class="fas fa-key text-amber-600 text-xl mr-3"></i>
+            <h2 class="text-lg font-semibold text-slate-900">Server Keys</h2>
+        </div>
+        <i id="server-keys-arrow" class="fas fa-chevron-down text-slate-400 transition-transform"></i>
+    </button>
+    <div id="server-keys-section" class="px-6 pb-6">
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+            <div class="flex">
+                <i class="fas fa-exclamation-triangle text-amber-600 mt-1"></i>
+                <div class="ml-3">
+                    <p class="text-sm text-amber-800">The server private key is stored securely and never displayed in the interface.</p>
+                </div>
+            </div>
+        </div>
+
+        {% if not settings.get('server_private_key') %}
+        <div class="bg-danger-50 border border-danger-200 rounded-lg p-4 mb-6">
+            <div class="flex">
+                <i class="fas fa-exclamation-circle text-danger-600 mt-1"></i>
+                <div class="ml-3">
+                    <p class="text-sm text-danger-800">Server keys are not configured. Generate or import keys to use the application.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="flex flex-wrap gap-3 mb-6">
+            <form action="{{ url_for('generate_keys') }}" method="POST">
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    <i class="fas fa-key mr-2"></i>Generate New Keys
+                </button>
+            </form>
+            <span class="px-3 py-2 text-sm {% if settings.get('server_private_key') %}text-success-600 bg-success-50{% else %}text-slate-500 bg-slate-100{% endif %} rounded-lg">
+                {% if settings.get('server_private_key') %}
+                <i class="fas fa-check-circle mr-1"></i> Keys configured
+                {% else %}
+                <i class="fas fa-times-circle mr-1"></i> Keys not configured
+                {% endif %}
+            </span>
+        </div>
+
+        {% if settings.get('server_public_key') %}
+        <div class="bg-success-50 border border-success-200 rounded-lg p-4">
+            <div class="flex items-start">
+                <i class="fas fa-key text-success-600 mt-1"></i>
+                <div class="ml-3 flex-1">
+                    <p class="text-sm font-medium text-success-800">Server Public Key</p>
+                    <div class="mt-2 flex items-center gap-2">
+                        <code id="server-public-key-display" class="text-xs bg-white px-2 py-1 rounded border border-success-200 font-mono flex-1 overflow-x-auto block">{{ settings.get('server_public_key') }}</code>
+                        <button onclick="copyPublicKey(event)" class="inline-flex items-center px-2 py-1 bg-white text-success-700 rounded hover:bg-success-50 transition-colors text-xs" title="Copy key">
+                            <i class="fas fa-copy mr-1"></i>Copy
+                        </button>
+                    </div>
+                    <p class="mt-2 text-xs text-success-600">This is the public key that clients must use to connect.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Import Existing Keys -->
+        <div class="border-t border-slate-200 pt-6 mt-6">
+            <button type="button" onclick="toggleImportKeys()" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                <i class="fas fa-file-import mr-1"></i>Import existing keys
+            </button>
+            <form id="import-keys-form" action="{{ url_for('import_keys') }}" method="POST" class="hidden mt-4 bg-slate-50 p-4 rounded-lg">
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label for="private_key" class="block text-sm font-medium text-slate-700">Private Key</label>
+                        <textarea id="private_key" name="private_key" rows="3" required
+                            class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                            placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"></textarea>
+                    </div>
+                    <div>
+                        <label for="public_key" class="block text-sm font-medium text-slate-700">Public Key</label>
+                        <input type="text" id="public_key" name="public_key" required
+                            class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+                            placeholder="zFpx+Yj8g6P2w5v8k1m4n6p8r0t2w4x6y8z0b1d3f5h7j9">
+                    </div>
+                    <div>
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors">
+                            <i class="fas fa-upload mr-2"></i>Import Keys
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- WireGuard Settings Section -->
+<form action="{{ url_for('settings') }}" method="POST" class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+    <button type="button" onclick="toggleSection('wireguard-settings')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors rounded-t-xl">
+        <div class="flex items-center">
+            <i class="fas fa-server text-primary-600 text-xl mr-3"></i>
+            <h2 class="text-lg font-semibold text-slate-900">WireGuard Settings</h2>
+        </div>
+        <i id="wireguard-settings-arrow" class="fas fa-chevron-down text-slate-400 transition-transform"></i>
+    </button>
+    <div id="wireguard-settings-section" class="px-6 pb-6 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+            <div>
+                <label for="wg_interface" class="block text-sm font-medium text-slate-700">Interface</label>
+                <input type="text" id="wg_interface" name="wg_interface" value="{{ settings.get('wg_interface', 'wg0') }}"
+                    class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono">
+            </div>
+            <div>
+                <label for="wg_tunnel_name" class="block text-sm font-medium text-slate-700">Tunnel Name</label>
+                <input type="text" id="wg_tunnel_name" name="wg_tunnel_name" value="{{ settings.get('wg_tunnel_name', 'wg0') }}"
+                    class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono">
+            </div>
+            <div>
+                <label for="wg_listen_port" class="block text-sm font-medium text-slate-700">Listen Port</label>
+                <input type="text" id="wg_listen_port" name="wg_listen_port" value="{{ settings.get('wg_listen_port', '51820') }}"
+                    class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+                <label for="wg_network" class="block text-sm font-medium text-slate-700">Network (CIDR)</label>
+                <input type="text" id="wg_network" name="wg_network" value="{{ settings.get('wg_network', '10.0.0.0/24') }}"
+                    class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono">
+            </div>
+            <div>
+                <label for="wg_dns" class="block text-sm font-medium text-slate-700">DNS</label>
+                <input type="text" id="wg_dns" name="wg_dns" value="{{ settings.get('wg_dns', '1.1.1.1') }}"
+                    class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+                <label for="wg_endpoint" class="block text-sm font-medium text-slate-700">Endpoint (Host:Port)</label>
+                <input type="text" id="wg_endpoint" name="wg_endpoint" value="{{ settings.get('wg_endpoint', '') }}"
+                    class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="vpn.ejemplo.com:51820">
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <label for="server_config_path" class="block text-sm font-medium text-slate-700">Configuration File Path</label>
+            <input type="text" id="server_config_path" name="server_config_path" value="{{ settings.get('server_config_path', '/etc/wireguard/wg0.conf') }}"
+                class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono">
+        </div>
+
+        <div class="mt-6 flex items-center">
+            <input type="checkbox" id="auto_restart_tunnel" name="auto_restart_tunnel" {% if settings.get('auto_restart_tunnel') == 'True' %}checked{% endif %}
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
+            <label for="auto_restart_tunnel" class="ml-2 block text-sm text-slate-700">
+                Automatically restart tunnel after changes
+            </label>
+        </div>
+
+        <div class="mt-6 flex justify-end">
+            <button type="submit" class="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <i class="fas fa-save mr-2"></i>Save Settings
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Tunnel Control Section -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+    <button type="button" onclick="toggleSection('tunnel-control')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors rounded-t-xl">
+        <div class="flex items-center">
+            <i class="fas fa-network-wired text-primary-600 text-xl mr-3"></i>
+            <h2 class="text-lg font-semibold text-slate-900">Tunnel Control</h2>
+        </div>
+        <i id="tunnel-control-arrow" class="fas fa-chevron-down text-slate-400 transition-transform"></i>
+    </button>
+    <div id="tunnel-control-section" class="px-6 pb-6 hidden">
+        <div class="flex flex-wrap gap-3 pt-4">
+            <form action="{{ url_for('stop_tunnel_route') }}" method="POST">
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">
+                    <i class="fas fa-stop mr-2"></i>Stop Tunnel
+                </button>
+            </form>
+            <form action="{{ url_for('start_tunnel_route') }}" method="POST">
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
+                    <i class="fas fa-play mr-2"></i>Start Tunnel
+                </button>
+            </form>
+            <form action="{{ url_for('restart_tunnel_route') }}" method="POST">
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors">
+                    <i class="fas fa-sync-alt mr-2"></i>Restart Tunnel
+                </button>
+            </form>
+            <form action="{{ url_for('refresh_now') }}" method="POST">
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+                    <i class="fas fa-sync-alt mr-2"></i>Force Refresh
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Telegram Settings Section -->
+<form action="{{ url_for('settings') }}" method="POST" class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+    <button type="button" onclick="toggleSection('telegram-settings')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors rounded-t-xl">
+        <div class="flex items-center">
+            <i class="fab fa-telegram text-blue-500 text-xl mr-3"></i>
+            <h2 class="text-lg font-semibold text-slate-900">Telegram Notifications</h2>
+        </div>
+        <i id="telegram-settings-arrow" class="fas fa-chevron-down text-slate-400 transition-transform"></i>
+    </button>
+    <div id="telegram-settings-section" class="px-6 pb-6 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+            <div class="flex items-center">
+                <input type="checkbox" id="telegram_enabled" name="telegram_enabled" {% if settings.get('telegram_enabled') == 'True' %}checked{% endif %}
+                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
+                <label for="telegram_enabled" class="ml-2 block text-sm text-slate-700">
+                    Enable notifications
+                </label>
+            </div>
+            <div>
+                <label for="telegram_expire_seconds" class="block text-sm font-medium text-slate-700">Seconds before re-notifying</label>
+                <input type="text" id="telegram_expire_seconds" name="telegram_expire_seconds" value="{{ settings.get('telegram_expire_seconds', '300') }}"
+                    class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+                <label for="telegram_bot_token" class="block text-sm font-medium text-slate-700">Bot Token</label>
+                <input type="text" id="telegram_bot_token" name="telegram_bot_token" value="{{ settings.get('telegram_bot_token', '') }}"
+                    class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+                <label for="telegram_chat_id" class="block text-sm font-medium text-slate-700">Chat ID</label>
+                <input type="text" id="telegram_chat_id" name="telegram_chat_id" value="{{ settings.get('telegram_chat_id', '') }}"
+                    class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <label for="telegram_message_template" class="block text-sm font-medium text-slate-700">Message Template</label>
+            <textarea id="telegram_message_template" name="telegram_message_template" rows="5"
+                class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                placeholder="🔔 Nuevo acceso...&#10;{name} - {ip} - {timestamp}">{{ settings.get('telegram_message_template', '') }}</textarea>
+            <p class="mt-1 text-sm text-slate-500">
+                Available variables: <code class="text-primary-600">{name}</code>, <code class="text-primary-600">{ip}</code>, <code class="text-primary-600">{timestamp}</code>, <code class="text-primary-600">{public_key}</code>
+            </p>
+        </div>
+
+        <div class="mt-6 flex items-center gap-3">
+            <form action="{{ url_for('test_telegram') }}" method="POST">
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+                    <i class="fab fa-telegram mr-2"></i>Test Connection
+                </button>
+            </form>
+            <button type="submit" class="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <i class="fas fa-save mr-2"></i>Save Telegram
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Refresh Settings Section -->
+<form action="{{ url_for('settings') }}" method="POST" class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+    <button type="button" onclick="toggleSection('refresh-settings')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors rounded-t-xl">
+        <div class="flex items-center">
+            <i class="fas fa-clock text-primary-600 text-xl mr-3"></i>
+            <h2 class="text-lg font-semibold text-slate-900">Refresh Settings</h2>
+        </div>
+        <i id="refresh-settings-arrow" class="fas fa-chevron-down text-slate-400 transition-transform"></i>
+    </button>
+    <div id="refresh-settings-section" class="px-6 pb-6 hidden">
+        <div class="max-w-xs pt-4">
+            <label for="refresh_interval" class="block text-sm font-medium text-slate-700">Seconds between checks</label>
+            <input type="text" id="refresh_interval" name="refresh_interval" value="{{ settings.get('refresh_interval', '30') }}"
+                class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <p class="mt-2 text-sm text-slate-500">Interval to check connection status with <code class="text-primary-600">wg show</code></p>
+        
+        <div class="mt-6">
+            <button type="submit" class="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <i class="fas fa-save mr-2"></i>Save Refresh
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Export/Import Section -->
+<form action="{{ url_for('settings') }}" method="POST" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+    <button type="button" onclick="toggleSection('export-import')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors rounded-t-xl">
+        <div class="flex items-center">
+            <i class="fas fa-exchange-alt text-primary-600 text-xl mr-3"></i>
+            <h2 class="text-lg font-semibold text-slate-900">Export / Import Configuration</h2>
+        </div>
+        <i id="export-import-arrow" class="fas fa-chevron-down text-slate-400 transition-transform"></i>
+    </button>
+    <div id="export-import-section" class="px-6 pb-6 hidden">
+        <div class="flex flex-wrap gap-3 pt-4">
+            <a href="{{ url_for('export_config') }}" class="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+                <i class="fas fa-download mr-2"></i>Export JSON
+            </a>
+            <label class="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer">
+                <i class="fas fa-upload mr-2"></i>Import JSON
+                <input type="file" name="file" accept=".json" onchange="this.form.submit()" class="hidden">
+            </label>
+        </div>
+    </div>
+</form>
+
+<script>
+    function toggleSection(sectionId) {
+        const section = document.getElementById(sectionId + '-section');
+        const arrow = document.getElementById(sectionId + '-arrow');
+        section.classList.toggle('hidden');
+        arrow.classList.toggle('rotate-180');
+    }
+
+    function toggleImportKeys() {
+        const form = document.getElementById('import-keys-form');
+        form.classList.toggle('hidden');
+    }
+
+    function copyPublicKey(event) {
+        const publicKeyElement = document.getElementById('server-public-key-display');
+        const publicKey = publicKeyElement.textContent.trim();
+        navigator.clipboard.writeText(publicKey).then(function() {
+            // Show temporary success feedback
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+            btn.classList.remove('bg-white', 'text-success-700');
+            btn.classList.add('bg-success-600', 'text-white');
+            setTimeout(function() {
+                btn.innerHTML = originalHtml;
+                btn.classList.add('bg-white', 'text-success-700');
+                btn.classList.remove('bg-success-600', 'text-white');
+            }, 2000);
+        }).catch(function(err) {
+            console.error('Error copying: ', err);
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Server Keys - WireGuard GUI{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-slate-900">Server Keys</h1>
+    <p class="text-slate-500">Generate or import WireGuard server keys</p>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-4xl">
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+        <div class="flex">
+            <i class="fas fa-exclamation-triangle text-amber-600 mt-1"></i>
+            <div class="ml-3">
+                <p class="text-sm text-amber-800">The server private key is stored securely and never displayed in the interface.</p>
+            </div>
+        </div>
+    </div>
+
+    {% if not settings.get('server_private_key') %}
+    <div class="bg-danger-50 border border-danger-200 rounded-lg p-4 mb-6">
+        <div class="flex">
+            <i class="fas fa-exclamation-circle text-danger-600 mt-1"></i>
+            <div class="ml-3">
+                <p class="text-sm text-danger-800">Server keys are not configured. Generate or import keys to use the application.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="flex flex-wrap gap-3 mb-6">
+        <form action="{{ url_for('generate_keys') }}" method="POST">
+            <button type="submit" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <i class="fas fa-key mr-2"></i>Generate New Keys
+            </button>
+        </form>
+        <span class="px-3 py-2 text-sm {% if settings.get('server_private_key') %}text-success-600 bg-success-50{% else %}text-slate-500 bg-slate-100{% endif %} rounded-lg">
+            {% if settings.get('server_private_key') %}
+            <i class="fas fa-check-circle mr-1"></i> Keys configured
+            {% else %}
+            <i class="fas fa-times-circle mr-1"></i> Keys not configured
+            {% endif %}
+        </span>
+    </div>
+
+    {% if settings.get('server_public_key') %}
+    <div class="bg-success-50 border border-success-200 rounded-lg p-4">
+        <div class="flex items-start">
+            <i class="fas fa-key text-success-600 mt-1"></i>
+            <div class="ml-3 flex-1">
+                <p class="text-sm font-medium text-success-800">Server Public Key</p>
+                <div class="mt-2 flex items-center gap-2">
+                    <code id="server-public-key-display" class="text-xs bg-white px-2 py-1 rounded border border-success-200 font-mono flex-1 overflow-x-auto block">{{ settings.get('server_public_key') }}</code>
+                    <button onclick="copyPublicKey(event)" class="inline-flex items-center px-2 py-1 bg-white text-success-700 rounded hover:bg-success-50 transition-colors text-xs" title="Copy key">
+                        <i class="fas fa-copy mr-1"></i>Copy
+                    </button>
+                </div>
+                <p class="mt-2 text-xs text-success-600">This is the public key that clients must use to connect.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Import Existing Keys -->
+    <div class="border-t border-slate-200 pt-6 mt-6">
+        <button type="button" onclick="toggleImportKeys()" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+            <i class="fas fa-file-import mr-1"></i>Import existing keys
+        </button>
+        <form id="import-keys-form" action="{{ url_for('import_keys') }}" method="POST" class="hidden mt-4 bg-slate-50 p-4 rounded-lg">
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label for="private_key" class="block text-sm font-medium text-slate-700">Private Key</label>
+                    <textarea id="private_key" name="private_key" rows="3" required
+                        class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                        placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"></textarea>
+                </div>
+                <div>
+                    <label for="public_key" class="block text-sm font-medium text-slate-700">Public Key</label>
+                    <input type="text" id="public_key" name="public_key" required
+                        class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+                        placeholder="zFpx+Yj8g6P2w5v8k1m4n6p8r0t2w4x6y8z0b1d3f5h7j9">
+                </div>
+                <div>
+                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                        <i class="fas fa-upload mr-2"></i>Import Keys
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleImportKeys() {
+        const form = document.getElementById('import-keys-form');
+        form.classList.toggle('hidden');
+    }
+
+    function copyPublicKey(event) {
+        const publicKeyElement = document.getElementById('server-public-key-display');
+        const publicKey = publicKeyElement.textContent.trim();
+        navigator.clipboard.writeText(publicKey).then(function() {
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+            btn.classList.remove('bg-white', 'text-success-700');
+            btn.classList.add('bg-success-600', 'text-white');
+            setTimeout(function() {
+                btn.innerHTML = originalHtml;
+                btn.classList.add('bg-white', 'text-success-700');
+                btn.classList.remove('bg-success-600', 'text-white');
+            }, 2000);
+        }).catch(function(err) {
+            console.error('Error copying: ', err);
+        });
+    }
+</script>
+{% endblock %}

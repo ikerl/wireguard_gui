@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Flask
+instance/
+
+# Environment
+.env
+venv/
+.venv/
+
+# WireGuard GUI
+plans/
+*.db
+
+# Fonts
+static/webfonts/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/

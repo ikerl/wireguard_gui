@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - WireGuard GUI{% endblock %}
+
+{% block content %}
+<!-- Alerts Section -->
+{% if errors or warnings %}
+<div class="mb-6 space-y-3">
+    {% for error in errors %}
+    <div class="relative bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 text-red-800 px-4 py-4 rounded-r-lg flex items-start shadow-sm">
+        <div class="flex-shrink-0 mr-3">
+            <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                <i class="fas fa-times text-white text-sm"></i>
+            </div>
+        </div>
+        <div class="flex-1">
+            <span class="font-bold text-red-700 block">Error</span>
+            <p class="text-sm text-red-700 mt-1">{{ error }}</p>
+        </div>
+        {% if 'sudo apt install wireguard' in error %}
+        <div class="ml-4">
+            <code class="bg-red-200 text-red-800 px-3 py-1 rounded text-sm font-mono">sudo apt install wireguard</code>
+        </div>
+        {% endif %}
+        <div class="ml-auto pl-4">
+            {% if 'server key' in error|lower %}
+            <a href="{{ url_for('settings_server_keys') }}" class="text-sm font-medium text-red-600 hover:text-red-800 flex items-center">
+                Fix <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+            {% elif 'tunnel' in error|lower or 'túnel' in error|lower %}
+            <a href="{{ url_for('settings_tunnel') }}" class="text-sm font-medium text-red-600 hover:text-red-800 flex items-center">
+                Fix <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+            {% elif 'telegram' in error|lower %}
+            <a href="{{ url_for('settings_telegram') }}" class="text-sm font-medium text-red-600 hover:text-red-800 flex items-center">
+                Fix <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+            {% elif 'sudo apt install' in error %}
+            <span class="text-xs text-red-500 italic">Requires system installation</span>
+            {% else %}
+            <a href="{{ url_for('settings') }}" class="text-sm font-medium text-red-600 hover:text-red-800 flex items-center">
+                Fix <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    {% for warning in warnings %}
+    <div class="relative bg-gradient-to-r from-amber-50 to-amber-100 border-l-4 border-amber-500 text-amber-800 px-4 py-4 rounded-r-lg flex items-start shadow-sm">
+        <div class="flex-shrink-0 mr-3">
+            <div class="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center">
+                <i class="fas fa-exclamation text-white text-sm"></i>
+            </div>
+        </div>
+        <div class="flex-1">
+            <span class="font-bold text-amber-700 block">Warning</span>
+            <p class="text-sm text-amber-700 mt-1">{{ warning }}</p>
+        </div>
+        <div class="ml-auto pl-4">
+            {% if 'server key' in warning|lower %}
+            <a href="{{ url_for('settings_server_keys') }}" class="text-sm font-medium text-amber-600 hover:text-amber-800 flex items-center">
+                Fix <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+            {% elif 'tunnel' in warning|lower or 'túnel' in warning|lower %}
+            <a href="{{ url_for('settings_tunnel') }}" class="text-sm font-medium text-amber-600 hover:text-amber-800 flex items-center">
+                Fix <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+            {% elif 'telegram' in warning|lower %}
+            <a href="{{ url_for('settings_telegram') }}" class="text-sm font-medium text-amber-600 hover:text-amber-800 flex items-center">
+                Fix <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+            {% else %}
+            <a href="{{ url_for('settings') }}" class="text-sm font-medium text-amber-600 hover:text-amber-800 flex items-center">
+                Fix <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+        <div class="flex items-center">
+            <div class="p-3 rounded-xl bg-primary-100">
+                <i class="fas fa-users text-primary-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-slate-500">Total Peers</p>
+                <p class="text-2xl font-bold text-slate-900">{{ stats.total_peers }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+        <div class="flex items-center">
+            <div class="p-3 rounded-xl bg-success-50">
+                <i class="fas fa-check-circle text-success-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-slate-500">Enabled</p>
+                <p class="text-2xl font-bold text-slate-900">{{ stats.enabled_peers }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+        <div class="flex items-center">
+            <div class="p-3 rounded-xl bg-emerald-100">
+                <i class="fas fa-plug text-emerald-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-slate-500">Connected Now</p>
+                <p class="text-2xl font-bold text-slate-900">{{ stats.connected_now }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+        <div class="flex items-center">
+            <div class="p-3 rounded-xl bg-amber-100">
+                <i class="fas fa-calendar-plus text-amber-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-slate-500">Created Today</p>
+                <p class="text-2xl font-bold text-slate-900">{{ stats.created_today }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="mb-8">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
+    <div class="flex flex-wrap gap-3">
+        <a href="{{ url_for('create_peer') }}" class="btn-primary inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+            <i class="fas fa-plus mr-2"></i>New Peer
+        </a>
+        <a href="{{ url_for('import_peer') }}" class="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors card-hover">
+            <i class="fas fa-file-import mr-2"></i>Import Peer
+        </a>
+        <form action="{{ url_for('restart_tunnel_route') }}" method="POST" class="inline">
+            <button type="submit" class="inline-flex items-center px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors card-hover">
+                <i class="fas fa-sync-alt mr-2"></i>Restart Tunnel
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Peers Grid -->
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-slate-900">Recent Peers</h2>
+        <a href="{{ url_for('peers') }}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+            View all <i class="fas fa-arrow-right ml-1"></i>
+        </a>
+    </div>
+
+    {% if peers %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for peer in peers[:6] %}
+        {% set is_connected = peer.last_handshake and (now - peer.last_handshake).total_seconds() < settings.get('disconnect_timeout', '600')|int %}
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden card-hover {% if is_connected %}border-2 border-success-400 bg-gradient-to-br from-success-50 to-white connected-glow{% else %}border border-slate-200{% endif %}">
+            <div class="p-4 border-b {% if is_connected %}border-success-200{% else %}border-slate-100{% endif %} flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="h-10 w-10 rounded-lg {% if is_connected %}bg-success-100{% elif peer.status == 'enabled' %}bg-primary-100{% else %}bg-slate-100{% endif %} flex items-center justify-center">
+                        <i class="fas fa-desktop {% if is_connected %}text-success-600{% elif peer.status == 'enabled' %}text-primary-600{% else %}text-slate-400{% endif %}"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="font-medium text-slate-900">{{ peer.name }}</p>
+                        <p class="text-sm text-slate-500">{{ peer.assigned_ip }}</p>
+                    </div>
+                </div>
+                <span class="px-2 py-1 text-xs font-medium rounded-full
+                    {% if is_connected %}bg-success-500 text-white badge-shine{% elif peer.status == 'enabled' %}bg-success-50 text-success-600{% else %}bg-slate-100 text-slate-500{% endif %}">
+                    {% if is_connected %}Connected{% else %}{{ peer.status }}{% endif %}
+                </span>
+            </div>
+
+            <div class="p-4 space-y-2 text-sm">
+                <div class="flex items-center text-slate-500">
+                    <i class="fas fa-key w-5"></i>
+                    <span class="truncate font-mono text-xs">{{ peer.public_key[:24] }}...</span>
+                </div>
+                {% if peer.endpoint_ip %}
+                <div class="flex items-center text-slate-500">
+                    <i class="fas fa-globe w-5"></i>
+                    <span class="font-mono text-xs">{{ peer.endpoint_ip }}</span>
+                </div>
+                {% endif %}
+                <div class="flex items-center text-slate-500">
+                    <i class="fas fa-clock w-5"></i>
+                    {% if peer.last_connection %}
+                    <span>Last access: {{ peer.last_connection|local_time('%Y-%m-%d') }}</span>
+                    {% elif peer.last_handshake and peer.last_handshake.year > 1970 %}
+                    <span>Last access: {{ peer.last_handshake|local_time('%Y-%m-%d') }}</span>
+                    {% else %}
+                    <span class="text-slate-400">Never</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2">
+                <a href="{{ url_for('toggle_peer', peer_id=peer.id) }}" class="p-2 text-slate-500 hover:text-success-600 transition-colors" title="Enable/Disable">
+                    <i class="fas fa-power-off"></i>
+                </a>
+                <a href="{{ url_for('delete_peer', peer_id=peer.id) }}" class="p-2 text-slate-500 hover:text-danger-600 transition-colors" title="Delete" onclick="return confirm('Are you sure?');">
+                    <i class="fas fa-trash"></i>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
+        <div class="relative inline-block">
+            <i class="fas fa-users text-5xl text-slate-300 mb-4 float-animation"></i>
+        </div>
+        <p class="text-slate-500 mb-4">No peers configured yet</p>
+        <a href="{{ url_for('create_peer') }}" class="btn-primary inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+            <i class="fas fa-plus mr-2"></i>Create First Peer
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Recent History -->
+<div>
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Recent History</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {% if recent_history %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Event</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Peer</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Public IP</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% for h in recent_history %}
+                    <tr class="table-row-hover">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full
+                                {% if h.event_type == 'connection' %}bg-success-50 text-success-600
+                                {% elif h.event_type == 'disconnection' %}bg-danger-50 text-danger-600
+                                {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {{ h.event_type }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                            {{ h.peer.name if h.peer else 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                            {{ h.timestamp|local_time('%Y-%m-%d %H:%M:%S') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-500">
+                            {% if h.endpoint_ip %}
+                            <span class="text-success-600">{{ h.endpoint_ip }}</span>
+                            {% else %}
+                            <span class="text-slate-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-500">
+                            {{ h.details or '-' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-slate-500">
+            <div class="relative inline-block">
+                <i class="fas fa-history text-5xl text-slate-300 mb-4 float-animation"></i>
+            </div>
+            <p>No history yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

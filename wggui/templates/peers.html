@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Peers - WireGuard GUI{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Peer Management</h1>
+            <p class="text-slate-500">Manage WireGuard clients</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ url_for('import_peer') }}" class="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+                <i class="fas fa-file-import mr-2"></i>Import
+            </a>
+            <a href="{{ url_for('create_peer') }}" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <i class="fas fa-plus mr-2"></i>New Peer
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+    <form method="GET" class="flex flex-col sm:flex-row gap-4">
+        <div class="flex-1">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                <input type="text" name="search" value="{{ search }}"
+                    placeholder="Search by name or IP..."
+                    class="pl-10 w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <select name="status" onchange="this.form.submit()"
+                class="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All statuses</option>
+                <option value="enabled" {% if status_filter == 'enabled' %}selected{% endif %}>Enabled</option>
+                <option value="disabled" {% if status_filter == 'disabled' %}selected{% endif %}>Disabled</option>
+            </select>
+            <a href="{{ url_for('peers') }}" class="px-4 py-2 text-slate-500 hover:text-slate-700">
+                <i class="fas fa-times"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Peers Table -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    {% if peers %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Assigned IP</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Public IP</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Public Key</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Last Access</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                {% for peer in peers %}
+                {% set is_connected = peer.last_handshake and (now - peer.last_handshake).total_seconds() < settings.get('disconnect_timeout', '600')|int %}
+                <tr class="hover:bg-slate-50 transition-colors table-row-hover {% if is_connected %}bg-success-50{% endif %}">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="h-10 w-10 rounded-lg {% if is_connected %}bg-success-100{% elif peer.status == 'enabled' %}bg-primary-100{% else %}bg-slate-100{% endif %} flex items-center justify-center">
+                                <i class="fas fa-desktop {% if is_connected %}text-success-600{% elif peer.status == 'enabled' %}text-primary-600{% else %}text-slate-400{% endif %}"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="font-medium text-slate-900">{{ peer.name }}</p>
+                                <p class="text-xs text-slate-500">Created: {{ peer.created_at|local_time('%Y-%m-%d') }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600">
+                        {{ peer.assigned_ip }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600">
+                        {% if peer.endpoint_ip %}
+                        <span class="text-success-600">{{ peer.endpoint_ip }}</span>
+                        {% else %}
+                        <span class="text-slate-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                        <div class="flex items-center">
+                            <span class="font-mono text-xs text-slate-500 truncate max-w-[150px]">{{ peer.public_key }}</span>
+                            <button onclick="copyToClipboard('{{ peer.public_key }}')"
+                                class="ml-2 text-slate-400 hover:text-primary-600 transition-colors" title="Copy">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                        {% if peer.last_connection %}
+                        <span class="{% if is_connected %}text-success-600 font-medium{% endif %}">
+                            {{ peer.last_connection|local_time('%Y-%m-%d') }}
+                        </span>
+                        {% elif peer.last_handshake and peer.last_handshake.year > 1970 %}
+                        <span class="{% if is_connected %}text-success-600 font-medium{% endif %}">
+                            {{ peer.last_handshake|local_time('%Y-%m-%d') }}
+                        </span>
+                        {% else %}
+                        <span class="text-slate-400">Never</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full
+                            {% if is_connected %}bg-success-500 text-white badge-shine{% elif peer.status == 'enabled' %}bg-success-50 text-success-600{% else %}bg-slate-100 text-slate-500{% endif %}">
+                            {% if is_connected %}Connected{% else %}{{ peer.status }}{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex justify-end space-x-2">
+                            <a href="{{ url_for('toggle_peer', peer_id=peer.id) }}" class="p-2 text-slate-400 hover:text-success-600 transition-colors" title="Enable/Disable">
+                                <i class="fas fa-power-off"></i>
+                            </a>
+                            <a href="{{ url_for('delete_peer', peer_id=peer.id) }}" class="p-2 text-slate-400 hover:text-danger-600 transition-colors" title="Delete" onclick="return confirm('Are you sure you want to delete this peer?');">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-8 text-center text-slate-500">
+        <div class="relative inline-block">
+            <i class="fas fa-users text-5xl text-slate-300 mb-4 float-animation"></i>
+        </div>
+        <p>No peers found</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            // Could show a toast here
+        }).catch(function(err) {
+            console.error('Error copying: ', err);
+        });
+    }
+</script>
+{% endblock %}

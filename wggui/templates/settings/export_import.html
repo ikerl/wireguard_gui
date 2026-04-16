@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Export / Import - WireGuard GUI{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-slate-900">Export / Import Configuration</h1>
+    <p class="text-slate-500">Save or restore WireGuard GUI configuration</p>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-4xl">
+    <div class="flex flex-wrap gap-4">
+        <a href="{{ url_for('export_config') }}" class="inline-flex items-center px-6 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+            <i class="fas fa-download mr-2"></i>Export JSON
+        </a>
+        <form action="{{ url_for('import_config') }}" method="POST" enctype="multipart/form-data" class="inline" id="importForm">
+            <label class="inline-flex items-center px-6 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer">
+<i class="fas fa-upload mr-2"></i>Import JSON
+                <input type="file" name="file" accept=".json" class="hidden" onchange="confirmImport(this)">
+            </label>
+        </form>
+    </div>
+
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex">
+            <i class="fas fa-info-circle text-blue-600 mt-1"></i>
+            <div class="ml-3">
+                <p class="text-sm text-blue-800">
+                    <strong>Export:</strong> Download a JSON file with all settings, peers, and history.<br>
+                    <strong>Import:</strong> Restore configuration from a previously exported JSON file.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmImport(input) {
+    if (!input.files || !input.files[0]) {
+        console.log('[DEBUG] No file selected');
+        modalAlert('Error', 'No file selected');
+        return;
+    }
+
+    const filename = input.files[0].name;
+    const file = input.files[0];
+    console.log('[DEBUG] File selected:', filename);
+
+    showModal(
+        'confirm',
+        '⚠️ Confirm Import',
+        'This action will IMPORT a configuration file that will OVERWRITE the current configuration.\n\nFile: ' + filename + '\n\nThis will replace all peers, settings, and current configuration.\n\nAre you sure you want to continue?',
+        function() {
+            console.log('[DEBUG] User confirmed, uploading file...');
+            const label = input.parentElement;
+            label.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Importing...';
+            label.style.pointerEvents = 'none';
+
+            // Send file via AJAX
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('{{ url_for("import_config") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('[DEBUG] Response status:', response.status);
+                return response.redirected ? window.location.reload() : response.text();
+            })
+            .then(data => {
+                console.log('[DEBUG] Import completed');
+                modalSuccess('Success', 'Configuration imported successfully. The page will reload.');
+                setTimeout(() => window.location.reload(), 2000);
+            })
+            .catch(error => {
+                console.error('[DEBUG] Error:', error);
+                modalError('Error', 'Error importing: ' + error.message);
+                label.innerHTML = '<i class="fas fa-upload mr-2"></i>Import JSON';
+                label.style.pointerEvents = 'auto';
+            });
+        }
+    );
+}
+</script>
+{% endblock %}
+guna 

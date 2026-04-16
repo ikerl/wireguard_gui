@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Import Peer - WireGuard GUI{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-slate-900">Import Existing Peer</h1>
+        <p class="text-slate-500">Add a peer that already has generated keys</p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <form method="POST">
+            <div class="space-y-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-slate-700">
+                        Peer name <span class="text-danger-500">*</span>
+                    </label>
+                    <div class="mt-1">
+                        <input type="text" id="name" name="name" required
+                            class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            placeholder="E.g: office-server-2">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="public_key" class="block text-sm font-medium text-slate-700">
+                        Public Key <span class="text-danger-500">*</span>
+                    </label>
+                    <div class="mt-1">
+                        <input type="text" id="public_key" name="public_key" required
+                            class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono"
+                            placeholder="E.g: uGuxxx... (44 characters)">
+                    </div>
+                    <p class="mt-1 text-sm text-slate-500">WireGuard client public key</p>
+                </div>
+
+                <div>
+                    <label for="assigned_ip" class="block text-sm font-medium text-slate-700">
+                        Assigned IP <span class="text-danger-500">*</span>
+                    </label>
+                    <div class="mt-1">
+                        <input type="text" id="assigned_ip" name="assigned_ip" required
+                            class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono"
+                            placeholder="E.g: 10.0.0.100">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="pre_shared_key" class="block text-sm font-medium text-slate-700">
+                        Pre-Shared Key (Optional)
+                    </label>
+                    <div class="mt-1">
+                        <input type="text" id="pre_shared_key" name="pre_shared_key"
+                            class="appearance-none block w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono"
+                            placeholder="Opcional">
+                    </div>
+                    <p class="mt-1 text-sm text-slate-500">If you use PSK in your configuration</p>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4">
+                    <a href="{{ url_for('peers') }}" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                        <i class="fas fa-file-import mr-2"></i>Import Peer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

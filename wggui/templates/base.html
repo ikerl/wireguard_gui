@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}WireGuard GUI{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
+    <style>
+        /* Custom colors matching Tailwind config */
+        :root {
+            --color-primary-50: #eef2ff;
+            --color-primary-100: #e0e7ff;
+            --color-primary-200: #c7d2fe;
+            --color-primary-300: #a5b4fc;
+            --color-primary-400: #818cf8;
+            --color-primary-500: #6366f1;
+            --color-primary-600: #4f46e5;
+            --color-primary-700: #4338ca;
+            --color-primary-800: #3730a3;
+            --color-primary-900: #312e81;
+            --color-success-50: #ecfdf5;
+            --color-success-500: #10b981;
+            --color-success-600: #059669;
+            --color-warning-50: #fffbeb;
+            --color-warning-500: #f59e0b;
+            --color-warning-600: #d97706;
+            --color-danger-50: #fef2f2;
+            --color-danger-500: #ef4444;
+            --color-danger-600: #dc2626;
+        }
+        .text-primary-50 { color: var(--color-primary-50); }
+        .text-primary-100 { color: var(--color-primary-100); }
+        .text-primary-200 { color: var(--color-primary-200); }
+        .text-primary-300 { color: var(--color-primary-300); }
+        .text-primary-400 { color: var(--color-primary-400); }
+        .text-primary-500 { color: var(--color-primary-500); }
+        .text-primary-600 { color: var(--color-primary-600); }
+        .text-primary-700 { color: var(--color-primary-700); }
+        .text-primary-800 { color: var(--color-primary-800); }
+        .text-primary-900 { color: var(--color-primary-900); }
+        .bg-primary-50 { background-color: var(--color-primary-50); }
+        .bg-primary-100 { background-color: var(--color-primary-100); }
+        .bg-primary-600 { background-color: var(--color-primary-600); }
+        .hover\:bg-primary-700:hover { background-color: var(--color-primary-700); }
+        .hover\:text-primary-700:hover { color: var(--color-primary-700); }
+        .hover\:text-primary-600:hover { color: var(--color-primary-600); }
+        .text-success-500 { color: var(--color-success-500); }
+        .text-success-600 { color: var(--color-success-600); }
+        .bg-success-50 { background-color: var(--color-success-50); }
+        .border-success-500 { border-color: var(--color-success-500); }
+        .text-warning-500 { color: var(--color-warning-500); }
+        .bg-warning-50 { background-color: var(--color-warning-50); }
+        .text-danger-500 { color: var(--color-danger-500); }
+        .text-danger-600 { color: var(--color-danger-600); }
+        .bg-danger-50 { background-color: var(--color-danger-50); }
+        .border-danger-500 { border-color: var(--color-danger-500); }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Card hover effects */
+        .card-hover {
+            transition: all 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Button hover effects */
+        .btn-primary {
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.25);
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(99, 102, 241, 0.35);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Connected glow effect */
+        .connected-glow {
+            position: relative;
+        }
+        .connected-glow::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: inherit;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .connected-glow:hover::before {
+            opacity: 0.3;
+        }
+
+        /* Floating animation for empty states */
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Fade in animation */
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Pulse animation for stats */
+        .pulse-once {
+            animation: pulse 0.5s ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Row hover accent */
+        .table-row-hover {
+            position: relative;
+            transition: all 0.15s ease;
+        }
+        .table-row-hover::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #6366f1;
+            transform: scaleY(0);
+            transition: transform 0.15s ease;
+        }
+        .table-row-hover:hover::before {
+            transform: scaleY(1);
+        }
+
+        /* Input focus glow */
+        .input-glow:focus {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Badge shine effect */
+        .badge-shine {
+            position: relative;
+            overflow: hidden;
+        }
+        .badge-shine::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to right,
+                transparent 0%,
+                rgba(255,255,255,0.3) 50%,
+                transparent 100%
+            );
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+        @keyframes shine {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+
+/* Navbar styles */
+        .nav-item {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: #64748b;
+        }
+        .nav-item:hover {
+            background-color: rgba(148, 163, 184, 0.1);
+            color: #334155;
+        }
+        .nav-item-active {
+            background: linear-gradient(to right, #eef2ff, #e0e7ff);
+            color: #4338ca;
+            box-shadow: 0 1px 3px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Settings Dropdown */
+        .settings-dropdown {
+            background: #ffffff;
+            backdrop-filter: none;
+            border: 1px solid rgba(226, 232, 240, 1);
+        }
+        .settings-dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            color: #475569;
+            transition: all 0.15s ease;
+            border-radius: 0.5rem;
+            margin: 0.125rem 0.5rem;
+            width: calc(100% - 1rem);
+        }
+        .settings-dropdown-item:hover {
+            background-color: #f1f5f9;
+        }
+        .settings-dropdown-item.active {
+            background: linear-gradient(to right, #eef2ff, #e0e7ff);
+            color: #4338ca;
+        }
+
+        .mobile-nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .mobile-nav-item:hover {
+            background-color: #f1f5f9;
+        }
+
+        /* Notification badge animation */
+        .notif-badge-animate {
+            animation: badge-pulse 2s ease-in-out infinite;
+        }
+        @keyframes badge-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+            50% { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+        }
+
+        /* Nav link hover effect */
+        .nav-link-hover {
+            position: relative;
+        }
+        .nav-link-hover::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(to right, #6366f1, #818cf8);
+            border-radius: 1px;
+            transition: all 0.2s ease;
+            transform: translateX(-50%);
+        }
+        .nav-link-hover:hover::after {
+            width: calc(100% - 2rem);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    {% if current_user.is_authenticated %}
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md sticky top-0 z-50 border-b-2 border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-all">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <div class="flex items-center ml-2 lg:ml-0 h-10">
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="WireGuard GUI" class="h-full w-auto object-contain">
+                    </div>
+                    <div class="hidden lg:flex ml-10 space-x-1">
+                        <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}nav-item-active{% endif %}">
+                            <i class="fas fa-home mr-2"></i>Dashboard
+                        </a>
+                        <a href="{{ url_for('peers') }}" class="nav-item {% if request.endpoint and ('peer' in request.endpoint or request.endpoint == 'create_peer' or request.endpoint == 'import_peer') %}nav-item-active{% endif %}">
+                            <i class="fas fa-users mr-2"></i>Peers
+                        </a>
+                        <a href="{{ url_for('users') }}" class="nav-item {% if request.endpoint == 'users' %}nav-item-active{% endif %}">
+                            <i class="fas fa-user-cog mr-2"></i>Users
+                        </a>
+                        <div class="relative">
+                            <button onclick="toggleSettingsDropdown()" class="nav-item flex items-center {% if request.endpoint and ('settings' in request.endpoint or request.endpoint == 'settings_wireguard' or request.endpoint == 'settings_telegram' or request.endpoint == 'settings_tunnel' or request.endpoint == 'settings_refresh' or request.endpoint == 'settings_export_import') %}nav-item-active{% endif %}">
+                                <i class="fas fa-cog mr-2"></i>Settings
+                                <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                            </button>
+                            <!-- Settings Dropdown -->
+                            <div id="settings-dropdown" class="hidden absolute left-0 mt-2 w-56 settings-dropdown rounded-xl shadow-xl z-50 py-2">
+                                <a href="{{ url_for('settings_wireguard') }}" class="settings-dropdown-item {% if request.endpoint == 'settings_wireguard' %}active{% endif %}">
+                                    <i class="fas fa-server w-5"></i> WireGuard
+                                </a>
+                                <a href="{{ url_for('settings_server_keys') }}" class="settings-dropdown-item {% if request.endpoint == 'settings_server_keys' %}active{% endif %}">
+                                    <i class="fas fa-key w-5"></i> Server Keys
+                                </a>
+                                <a href="{{ url_for('settings_tunnel') }}" class="settings-dropdown-item {% if request.endpoint == 'settings_tunnel' %}active{% endif %}">
+                                    <i class="fas fa-network-wired w-5"></i> Tunnel Control
+                                </a>
+                                <a href="{{ url_for('settings_telegram') }}" class="settings-dropdown-item {% if request.endpoint == 'settings_telegram' %}active{% endif %}">
+                                    <i class="fab fa-telegram w-5"></i> Telegram
+                                </a>
+                                <a href="{{ url_for('settings_refresh') }}" class="settings-dropdown-item {% if request.endpoint == 'settings_refresh' %}active{% endif %}">
+                                    <i class="fas fa-clock w-5"></i> Refresh
+                                </a>
+                                <a href="{{ url_for('settings_export_import') }}" class="settings-dropdown-item {% if request.endpoint == 'settings_export_import' %}active{% endif %}">
+                                    <i class="fas fa-exchange-alt w-5"></i> Export/Import
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="relative">
+                        <button onclick="toggleNotifications()" class="p-2.5 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-all relative" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span id="notif-badge" class="absolute -top-0.5 -right-0.5 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden notif-badge-animate">0</span>
+                        </button>
+                        <!-- Notifications Dropdown -->
+                        <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50">
+                            <div class="px-4 py-3 border-b border-slate-100">
+                                <h3 class="font-semibold text-slate-900">Notifications</h3>
+                            </div>
+                            <div id="notif-list" class="max-h-64 overflow-y-auto">
+                                <div class="p-4 text-center text-slate-500">Loading...</div>
+                            </div>
+                            <div class="px-4 py-2 border-t border-slate-100 bg-slate-50 rounded-b-xl">
+                                <a href="{{ url_for('index') }}" class="text-sm text-primary-600 hover:text-primary-700">View all connections</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3 pl-2 border-l border-slate-200">
+                        <div class="text-right hidden sm:block">
+                            <div class="text-sm font-medium text-slate-700">{{ current_user.username }}</div>
+                            <div class="text-xs text-slate-500">Administrator</div>
+                        </div>
+                        <div class="relative group">
+                            <div class="h-9 w-9 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center ring-2 ring-transparent group-hover:ring-primary-300 transition-all cursor-pointer">
+                                <i class="fas fa-user text-primary-600"></i>
+                            </div>
+                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
+                        </div>
+                        <a href="{{ url_for('logout') }}" class="p-2 text-slate-400 hover:text-red-500 transition-colors" title="Logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden lg:hidden relative">
+            <div class="absolute inset-0 bg-black/20 backdrop-blur-sm" onclick="document.getElementById('mobile-menu').classList.add('hidden')"></div>
+            <div class="relative bg-white/95 backdrop-blur-lg border-t border-slate-200/50 px-4 py-4 space-y-1">
+                <a href="{{ url_for('index') }}" class="mobile-nav-item {% if request.endpoint == 'index' %}bg-primary-50 text-primary-700{% else %}text-slate-600{% endif %}">
+                    <i class="fas fa-home mr-3"></i>Dashboard
+                </a>
+                <a href="{{ url_for('peers') }}" class="mobile-nav-item {% if request.endpoint and 'peer' in request.endpoint %}bg-primary-50 text-primary-700{% else %}text-slate-600{% endif %}">
+                    <i class="fas fa-users mr-3"></i>Peers
+                </a>
+                <a href="{{ url_for('users') }}" class="mobile-nav-item {% if request.endpoint == 'users' %}bg-primary-50 text-primary-700{% else %}text-slate-600{% endif %}">
+                    <i class="fas fa-user-cog mr-3"></i>Users
+                </a>
+                <div class="pt-3 pb-2">
+                    <div class="px-3 py-1 text-xs font-semibold text-slate-400 uppercase">Settings</div>
+                </div>
+                <a href="{{ url_for('settings_wireguard') }}" class="mobile-nav-item {% if request.endpoint == 'settings_wireguard' %}bg-primary-50 text-primary-700{% else %}text-slate-600{% endif %}">
+                    <i class="fas fa-server mr-3"></i>WireGuard
+                </a>
+                <a href="{{ url_for('settings_server_keys') }}" class="mobile-nav-item {% if request.endpoint == 'settings_server_keys' %}bg-primary-50 text-primary-700{% else %}text-slate-600{% endif %}">
+                    <i class="fas fa-key mr-3"></i>Server Keys
+                </a>
+                <a href="{{ url_for('settings_tunnel') }}" class="mobile-nav-item {% if request.endpoint == 'settings_tunnel' %}bg-primary-50 text-primary-700{% else %}text-slate-600{% endif %}">
+                    <i class="fas fa-network-wired mr-3"></i>Tunnel Control
+                </a>
+                <a href="{{ url_for('settings_telegram') }}" class="mobile-nav-item {% if request.endpoint == 'settings_telegram' %}bg-primary-50 text-primary-700{% else %}text-slate-600{% endif %}">
+                    <i class="fab fa-telegram mr-3"></i>Telegram
+                </a>
+                <a href="{{ url_for('settings_refresh') }}" class="mobile-nav-item {% if request.endpoint == 'settings_refresh' %}bg-primary-50 text-primary-700{% else %}text-slate-600{% endif %}">
+                    <i class="fas fa-clock mr-3"></i>Refresh
+                </a>
+                <a href="{{ url_for('settings_export_import') }}" class="mobile-nav-item {% if request.endpoint == 'settings_export_import' %}bg-primary-50 text-primary-700{% else %}text-slate-600{% endif %}">
+                    <i class="fas fa-exchange-alt mr-3"></i>Export/Import
+                </a>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Flash Messages -->
+    <div class="fixed top-20 right-4 z-50 space-y-2">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="fade-in px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3
+                        {% if category == 'error' %}bg-danger-50 text-danger-600 border border-danger-500{% else %}bg-success-50 text-success-600 border border-success-500{% endif %}">
+                        <i class="fas {% if category == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Modern Modal -->
+    <div id="modern-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 transition-opacity" onclick="closeModal()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md">
+            <div id="modal-content" class="bg-white rounded-xl shadow-2xl p-6 transform transition-all scale-100">
+                <div id="modal-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4"></div>
+                <h3 id="modal-title" class="text-lg font-semibold text-slate-900 text-center mb-2"></h3>
+                <p id="modal-message" class="text-sm text-slate-600 text-center mb-6 whitespace-pre-line"></p>
+                <div id="modal-buttons" class="flex justify-center gap-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="text-center text-sm text-slate-500">
+                WireGuard GUI v1.0.0
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Modal functions
+        function showModal(type, title, message, onConfirm) {
+            const modal = document.getElementById('modern-modal');
+            const icon = document.getElementById('modal-icon');
+            const titleEl = document.getElementById('modal-title');
+            const messageEl = document.getElementById('modal-message');
+            const buttons = document.getElementById('modal-buttons');
+
+            // Configure icon based on type
+            const icons = {
+                success: { bg: 'bg-green-100', text: 'text-green-600', icon: 'fa-check-circle' },
+                error: { bg: 'bg-red-100', text: 'text-red-600', icon: 'fa-times-circle' },
+                warning: { bg: 'bg-amber-100', text: 'text-amber-600', icon: 'fa-exclamation-triangle' },
+                info: { bg: 'bg-blue-100', text: 'text-blue-600', icon: 'fa-info-circle' },
+                confirm: { bg: 'bg-amber-100', text: 'text-amber-600', icon: 'fa-question-circle' }
+            };
+
+            const config = icons[type] || icons.info;
+            icon.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${config.bg}`;
+            icon.innerHTML = `<i class="fas ${config.icon} ${config.text} text-xl"></i>`;
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+
+            // Configure buttons
+            if (type === 'confirm') {
+                buttons.innerHTML = `
+                    <button onclick="closeModal()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-200 rounded-lg hover:bg-slate-300 transition-colors">Cancel</button>
+                    <button id="modal-confirm-btn" class="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors shadow-sm">Confirmar</button>
+                `;
+                const confirmBtn = document.getElementById('modal-confirm-btn');
+                console.log('[DEBUG] Confirm button found:', !!confirmBtn);
+                confirmBtn.onclick = function() {
+                    console.log('[DEBUG] Confirm button clicked');
+                    closeModal();
+                    if (onConfirm) {
+                        console.log('[DEBUG] Calling onConfirm callback');
+                        onConfirm();
+                    } else {
+                        console.log('[DEBUG] No onConfirm callback set');
+                    }
+                };
+            } else {
+                buttons.innerHTML = `
+                    <button onclick="closeModal()" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">OK</button>
+                `;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modern-modal').classList.add('hidden');
+        }
+
+        // Alert modal (replaces alert())
+        function modalAlert(title, message) {
+            showModal('info', title, message);
+        }
+
+        // Success modal
+        function modalSuccess(title, message) {
+            showModal('success', title, message);
+        }
+
+        // Error modal
+        function modalError(title, message) {
+            showModal('error', title, message);
+        }
+
+        // Confirm modal (replaces confirm()) - returns Promise
+        function modalConfirm(title, message) {
+            return new Promise((resolve) => {
+                console.log('[DEBUG] modalConfirm called, setting up resolve');
+                showModal('confirm', title, message, function() {
+                    console.log('[DEBUG] Confirm callback executed');
+                    resolve(true);
+                });
+            });
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn')?.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // Auto-hide flash messages only (not modal)
+        setTimeout(function() {
+            const flashes = document.querySelectorAll('.fixed.top-20.right-4 .fade-in');
+            flashes.forEach(function(flash) {
+                flash.style.opacity = '0';
+                flash.style.transition = 'opacity 0.5s ease-out';
+                setTimeout(function() {
+                    flash.remove();
+                }, 500);
+            });
+        }, 5000);
+
+        // Settings dropdown
+        function toggleSettingsDropdown() {
+            const dropdown = document.getElementById('settings-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            // Close settings dropdown
+            const settingsDropdown = document.getElementById('settings-dropdown');
+            const settingsButton = e.target.closest('[onclick="toggleSettingsDropdown()"]');
+            if (!settingsDropdown.contains(e.target) && !settingsButton) {
+                settingsDropdown.classList.add('hidden');
+            }
+            
+            // Close notifications dropdown
+            const notifDropdown = document.getElementById('notif-dropdown');
+            const notifButton = e.target.closest('[onclick="toggleNotifications()"]');
+            if (!notifDropdown.contains(e.target) && !notifButton) {
+                notifDropdown.classList.add('hidden');
+            }
+        });
+
+        // Notifications
+        let notifDropdown = null;
+        let notifLoaded = false;
+
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notif-dropdown');
+            if (dropdown.classList.contains('hidden')) {
+                dropdown.classList.remove('hidden');
+                if (!notifLoaded) {
+                    loadNotifications();
+                }
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        function loadNotifications() {
+            fetch('/api/notifications')
+                .then(response => response.json())
+                .then(data => {
+                    notifLoaded = true;
+                    const list = document.getElementById('notif-list');
+                    const badge = document.getElementById('notif-badge');
+                    
+                    // Update badge
+                    if (data.unread_count > 0) {
+                        badge.textContent = data.unread_count;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                    
+                    // Render notifications
+                    if (data.notifications.length === 0) {
+                        list.innerHTML = '<div class="p-4 text-center text-slate-500">No recent notifications</div>';
+                    } else {
+                        list.innerHTML = data.notifications.map(n => `
+                            <div class="px-4 py-3 border-b border-slate-100 hover:bg-slate-50">
+                                <div class="flex items-start">
+                                    <i class="fas ${n.type === 'connection' ? 'fa-plug text-success-500' : n.type === 'disconnection' ? 'fa-plug-circle-xmark text-danger-500' : 'fa-circle-info text-primary-500'} mt-1 mr-3"></i>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-slate-900">${n.peer_name}</p>
+                                        <p class="text-xs text-slate-500">${n.details || n.type}</p>
+                                        <p class="text-xs text-slate-400 mt-1">${n.time_ago}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('notif-list').innerHTML = '<div class="p-4 text-center text-red-500">Error loading</div>';
+                });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('notif-dropdown');
+            const button = e.target.closest('[onclick="toggleNotifications()"]');
+            if (!dropdown.contains(e.target) && !button) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Load notifications on page load
+        document.addEventListener('DOMContentLoaded', loadNotifications);
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Tunnel Control - WireGuard GUI{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-slate-900">Tunnel Control</h1>
+    <p class="text-slate-500">Manage WireGuard tunnel status</p>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-4xl">
+    <div class="flex flex-wrap gap-4">
+        <form action="{{ url_for('stop_tunnel_route') }}" method="POST">
+            <button type="submit" class="inline-flex items-center px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">
+                <i class="fas fa-stop mr-2"></i>Stop Tunnel
+            </button>
+        </form>
+        <form action="{{ url_for('start_tunnel_route') }}" method="POST">
+            <button type="submit" class="inline-flex items-center px-6 py-3 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
+                <i class="fas fa-play mr-2"></i>Start Tunnel
+            </button>
+        </form>
+        <form action="{{ url_for('restart_tunnel_route') }}" method="POST">
+            <button type="submit" class="inline-flex items-center px-6 py-3 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors">
+                <i class="fas fa-sync-alt mr-2"></i>Restart Tunnel
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
