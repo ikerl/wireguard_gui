@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics - WireGuard GUI{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-slate-900">Statistics</h1>
+    <p class="text-slate-500">Connection analytics and insights</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Histogram: Unique users per day (last 30 days) -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-900 mb-4">Unique Connections per Day</h3>
+        <p class="text-sm text-slate-500 mb-4">Last 30 days</p>
+        <div class="h-64">
+            <canvas id="histogramChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Pie Chart: IPs (last 7 days) -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-900 mb-4">Access by Public IP</h3>
+        <p class="text-sm text-slate-500 mb-4">Last 7 days</p>
+        <div class="h-64">
+            <canvas id="pieChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Table: Latest connections by IP-User -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-200">
+        <h3 class="text-lg font-semibold text-slate-900">Latest Connections</h3>
+        <p class="text-sm text-slate-500">Unique IP-User combinations, last refresh</p>
+    </div>
+    {% if connections_table %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Public IP</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">User</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Assigned IP</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Last Connection</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                {% for conn in connections_table %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-700">
+                        <span class="inline-flex items-center px-2 py-1 rounded bg-emerald-100 text-emerald-700">
+                            {{ conn.ip }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                        {{ conn.peer_name }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600">
+                        {{ conn.assigned_ip }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                        {{ conn.last_connection|local_time('%Y-%m-%d %H:%M:%S') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-8 text-center text-slate-500">
+        <i class="fas fa-chart-bar text-5xl text-slate-300 mb-4"></i>
+        <p>No connection data available</p>
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Histogram data
+    const histogramData = {{ histogram_data|safe }};
+    const histogramCtx = document.getElementById('histogramChart').getContext('2d');
+    new Chart(histogramCtx, {
+        type: 'bar',
+        data: {
+            labels: histogramData.labels,
+            datasets: [{
+                label: 'Unique Users',
+                data: histogramData.values,
+                backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                borderColor: 'rgba(99, 102, 241, 1)',
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y + ' unique users';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+
+    // Pie chart data
+    const pieData = {{ pie_data|safe }};
+    const pieCtx = document.getElementById('pieChart').getContext('2d');
+    new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+            labels: pieData.labels,
+            datasets: [{
+                data: pieData.values,
+                backgroundColor: [
+                    'rgba(99, 102, 241, 0.8)',
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(239, 68, 68, 0.8)',
+                    'rgba(139, 92, 246, 0.8)',
+                    'rgba(236, 72, 153, 0.8)',
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

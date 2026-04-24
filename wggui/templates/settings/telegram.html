@@ -21,7 +21,6 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <span class="text-sm font-bold text-slate-600" id="toggle-label">OFF</span>
             <button type="button" id="toggle-btn" onclick="toggleTelegramSettings()" class="w-16 h-9 rounded-full bg-gray-400 hover:bg-gray-500 transition-colors duration-200 relative shadow-inner border-2 border-gray-500">
                 <span class="absolute top-0.5 left-0.5 w-7 h-7 bg-white rounded-full shadow-md transform transition-transform duration-200" id="toggle-knob"></span>
             </button>
@@ -97,9 +96,6 @@ function toggleTelegramSettings() {
         toggleBtn.classList.remove('bg-gray-400', 'hover:bg-gray-500', 'border-gray-500');
         toggleBtn.classList.add('bg-primary-600', 'hover:bg-primary-700', 'border-primary-700');
         toggleKnob.style.transform = 'translateX(28px)';
-        label.textContent = 'ON';
-        label.classList.remove('text-slate-600');
-        label.classList.add('text-primary-600', 'font-bold');
     } else {
         settings.classList.add('hidden');
         settings.classList.remove('animate-fade-in');
@@ -107,9 +103,6 @@ function toggleTelegramSettings() {
         toggleBtn.classList.remove('bg-primary-600', 'hover:bg-primary-700', 'border-primary-700');
         toggleBtn.classList.add('bg-gray-400', 'hover:bg-gray-500', 'border-gray-500');
         toggleKnob.style.transform = 'translateX(0)';
-        label.textContent = 'OFF';
-        label.classList.remove('text-primary-600', 'font-bold');
-        label.classList.add('text-slate-600');
     }
 }
 

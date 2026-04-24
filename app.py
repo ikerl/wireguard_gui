@@ -51,7 +51,7 @@ with app.app_context():
 @login_required
 def index():
     """Main dashboard page."""
-    peers = Peer.query.all()
+    peers = Peer.query.order_by(db.case((Peer.last_connection.isnot(None), Peer.last_connection), else_=datetime.min).desc()).all()
     settings = {s.key: s.value for s in Settings.query.all()}
     errors, warnings = validate_prerequisites()
 
@@ -190,7 +190,7 @@ def peers():
     if search:
         query = query.filter(Peer.name.contains(search) | Peer.assigned_ip.contains(search))
 
-    peers_list = query.order_by(Peer.created_at.desc()).all()
+    peers_list = query.order_by(db.case((Peer.last_connection.isnot(None), Peer.last_connection), else_=datetime.min).desc()).all()
 
     # Get connected peers for highlighting
     connected_peers = [p for p in peers_list if p.last_handshake and
@@ -876,6 +876,131 @@ def get_time_ago(dt):
     else:
         days = int(seconds / 86400)
         return f'Hace {days} día{"s" if days > 1 else ""}'
+
+
+# ============== EVENTS PAGE ==============
+
+@app.route('/events')
+@login_required
+def events():
+    """Events history page with date filtering."""
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+
+    query = ConnectionHistory.query
+
+    if date_from:
+        try:
+            from_dt = datetime.strptime(date_from, '%Y-%m-%d')
+            query = query.filter(ConnectionHistory.timestamp >= from_dt)
+        except ValueError:
+            pass
+
+    if date_to:
+        try:
+            to_dt = datetime.strptime(date_to, '%Y-%m-%d')
+            to_dt = to_dt.replace(hour=23, minute=59, second=59)
+            query = query.filter(ConnectionHistory.timestamp <= to_dt)
+        except ValueError:
+            pass
+
+    total = query.count()
+    events_list = query.order_by(ConnectionHistory.timestamp.desc()).offset((page - 1) * per_page).limit(per_page).all()
+
+    return render_template('events.html',
+                          events=events_list,
+                          page=page,
+                          per_page=per_page,
+                          total=total,
+                          date_from=date_from,
+                          date_to=date_to)
+
+
+# ============== STATS PAGE ==============
+
+@app.route('/stats')
+@login_required
+def stats():
+    """Statistics page with charts."""
+    from datetime import timedelta
+
+    today = datetime.utcnow().date()
+    thirty_days_ago = today - timedelta(days=30)
+    seven_days_ago = today - timedelta(days=7)
+
+    # Histogram: unique users per day (last 30 days)
+    histogram_labels = []
+    histogram_values = []
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
+        day_start = datetime.combine(day, datetime.min.time())
+        day_end = datetime.combine(day, datetime.max.time())
+
+        peers_that_day = db.session.query(ConnectionHistory.peer_id).filter(
+            ConnectionHistory.timestamp >= day_start,
+            ConnectionHistory.timestamp <= day_end,
+            ConnectionHistory.event_type == 'connection'
+        ).distinct().count()
+
+        histogram_labels.append(day.strftime('%m-%d'))
+        histogram_values.append(peers_that_day)
+
+    # Pie: IPs (last 7 days)
+    seven_days_ago_dt = datetime.combine(seven_days_ago, datetime.min.time())
+    ip_stats = db.session.query(
+        ConnectionHistory.endpoint_ip,
+        db.func.count(ConnectionHistory.id).label('count')
+    ).filter(
+        ConnectionHistory.timestamp >= seven_days_ago_dt,
+        ConnectionHistory.endpoint_ip.isnot(None),
+        ConnectionHistory.endpoint_ip != ''
+    ).group_by(ConnectionHistory.endpoint_ip).order_by(db.desc('count')).limit(5).all()
+
+    pie_labels = [ip or 'Unknown' for ip, _ in ip_stats]
+    pie_values = [count for _, count in ip_stats]
+
+    # Table: latest connections by IP-User
+    connections_query = db.session.query(
+        ConnectionHistory.endpoint_ip,
+        ConnectionHistory.peer_id,
+        db.func.max(ConnectionHistory.timestamp).label('last_connection')
+    ).filter(
+        ConnectionHistory.timestamp >= seven_days_ago_dt,
+        ConnectionHistory.endpoint_ip.isnot(None),
+        ConnectionHistory.endpoint_ip != ''
+    ).group_by(
+        ConnectionHistory.endpoint_ip,
+        ConnectionHistory.peer_id
+    ).order_by(
+        db.desc('last_connection')
+    ).limit(30).all()
+
+    connections_table = []
+    for endpoint_ip, peer_id, last_conn in connections_query:
+        peer = Peer.query.get(peer_id)
+        if peer:
+            connections_table.append({
+                'ip': endpoint_ip or 'Unknown',
+                'peer_name': peer.name,
+                'assigned_ip': peer.assigned_ip,
+                'last_connection': last_conn
+            })
+
+    histogram_data = json.dumps({
+        'labels': histogram_labels,
+        'values': histogram_values
+    })
+    pie_data = json.dumps({
+        'labels': pie_labels,
+        'values': pie_values
+    })
+
+    return render_template('stats.html',
+                          histogram_data=histogram_data,
+                          pie_data=pie_data,
+                          connections_table=connections_table)
 
 
 # ============== ERROR HANDLERS ==============

@@ -175,7 +175,7 @@
                     </div>
                 </div>
                 <span class="px-2 py-1 text-xs font-medium rounded-full
-                    {% if is_connected %}bg-success-500 text-white badge-shine{% elif peer.status == 'enabled' %}bg-success-50 text-success-600{% else %}bg-slate-100 text-slate-500{% endif %}">
+                    {% if is_connected %}bg-emerald-600 text-white{% elif peer.status == 'enabled' %}bg-success-50 text-success-600{% else %}bg-slate-100 text-slate-500{% endif %}">
                     {% if is_connected %}Connected{% else %}{{ peer.status }}{% endif %}
                 </span>
             </div>
@@ -227,62 +227,48 @@
     {% endif %}
 </div>
 
-<!-- Recent History -->
-<div>
-    <h2 class="text-lg font-semibold text-slate-900 mb-4">Recent History</h2>
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        {% if recent_history %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200">
-                <thead class="bg-slate-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Event</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Peer</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Time</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Public IP</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Details</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-slate-200">
-                    {% for h in recent_history %}
-                    <tr class="table-row-hover">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 py-1 text-xs font-medium rounded-full
-                                {% if h.event_type == 'connection' %}bg-success-50 text-success-600
-                                {% elif h.event_type == 'disconnection' %}bg-danger-50 text-danger-600
-                                {% else %}bg-slate-100 text-slate-600{% endif %}">
-                                {{ h.event_type }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                            {{ h.peer.name if h.peer else 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                            {{ h.timestamp|local_time('%Y-%m-%d %H:%M:%S') }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-500">
-                            {% if h.endpoint_ip %}
-                            <span class="text-success-600">{{ h.endpoint_ip }}</span>
-                            {% else %}
-                            <span class="text-slate-400">-</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-slate-500">
-                            {{ h.details or '-' }}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="p-8 text-center text-slate-500">
-            <div class="relative inline-block">
-                <i class="fas fa-history text-5xl text-slate-300 mb-4 float-animation"></i>
+<!-- Statistics Link -->
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-slate-900">Statistics</h2>
+        <a href="{{ url_for('stats') }}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+            View all <i class="fas fa-arrow-right ml-1"></i>
+        </a>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="{{ url_for('stats') }}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover hover:border-primary-300">
+            <div class="flex items-center">
+                <div class="p-3 rounded-xl bg-primary-100">
+                    <i class="fas fa-chart-bar text-primary-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="font-medium text-slate-900">Analytics</p>
+                    <p class="text-sm text-slate-500">Connections charts</p>
+                </div>
             </div>
-            <p>No history yet</p>
-        </div>
-        {% endif %}
+        </a>
+        <a href="{{ url_for('events') }}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover hover:border-primary-300">
+            <div class="flex items-center">
+                <div class="p-3 rounded-xl bg-emerald-100">
+                    <i class="fas fa-list text-emerald-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="font-medium text-slate-900">Events Log</p>
+                    <p class="text-sm text-slate-500">All connection events</p>
+                </div>
+            </div>
+        </a>
+        <a href="{{ url_for('stats') }}#connections" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover hover:border-primary-300">
+            <div class="flex items-center">
+                <div class="p-3 rounded-xl bg-amber-100">
+                    <i class="fas fa-globe text-amber-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="font-medium text-slate-900">Access by IP</p>
+                    <p class="text-sm text-slate-500">Top source IPs</p>
+                </div>
+            </div>
+        </a>
     </div>
 </div>
 {% endblock %}

@@ -292,6 +292,9 @@
                         <a href="{{ url_for('users') }}" class="nav-item {% if request.endpoint == 'users' %}nav-item-active{% endif %}">
                             <i class="fas fa-user-cog mr-2"></i>Users
                         </a>
+                        <a href="{{ url_for('stats') }}" class="nav-item {% if request.endpoint == 'stats' %}nav-item-active{% endif %}">
+                            <i class="fas fa-chart-bar mr-2"></i>Statistics
+                        </a>
                         <div class="relative">
                             <button onclick="toggleSettingsDropdown()" class="nav-item flex items-center {% if request.endpoint and ('settings' in request.endpoint or request.endpoint == 'settings_wireguard' or request.endpoint == 'settings_telegram' or request.endpoint == 'settings_tunnel' or request.endpoint == 'settings_refresh' or request.endpoint == 'settings_export_import') %}nav-item-active{% endif %}">
                                 <i class="fas fa-cog mr-2"></i>Settings
@@ -336,7 +339,7 @@
                                 <div class="p-4 text-center text-slate-500">Loading...</div>
                             </div>
                             <div class="px-4 py-2 border-t border-slate-100 bg-slate-50 rounded-b-xl">
-                                <a href="{{ url_for('index') }}" class="text-sm text-primary-600 hover:text-primary-700">View all connections</a>
+                                <a href="{{ url_for('events') }}" class="text-sm text-primary-600 hover:text-primary-700">View all events</a>
                             </div>
                         </div>
                     </div>
@@ -370,6 +373,9 @@
                 </a>
                 <a href="{{ url_for('users') }}" class="mobile-nav-item {% if request.endpoint == 'users' %}bg-primary-50 text-primary-700{% else %}text-slate-600{% endif %}">
                     <i class="fas fa-user-cog mr-3"></i>Users
+                </a>
+                <a href="{{ url_for('stats') }}" class="mobile-nav-item {% if request.endpoint == 'stats' %}bg-primary-50 text-primary-700{% else %}text-slate-600{% endif %}">
+                    <i class="fas fa-chart-bar mr-3"></i>Statistics
                 </a>
                 <div class="pt-3 pb-2">
                     <div class="px-3 py-1 text-xs font-semibold text-slate-400 uppercase">Settings</div>

@@ -110,7 +110,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 py-1 text-xs font-medium rounded-full
-                            {% if is_connected %}bg-success-500 text-white badge-shine{% elif peer.status == 'enabled' %}bg-success-50 text-success-600{% else %}bg-slate-100 text-slate-500{% endif %}">
+                            {% if is_connected %}bg-emerald-600 text-white{% elif peer.status == 'enabled' %}bg-success-50 text-success-600{% else %}bg-slate-100 text-slate-500{% endif %}">
                             {% if is_connected %}Connected{% else %}{{ peer.status }}{% endif %}
                         </span>
                     </td>
