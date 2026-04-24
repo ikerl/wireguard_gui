@@ -41,6 +41,11 @@ def local_time(value, fmt='%Y-%m-%d %H:%M:%S'):
         pass
     return value.strftime(fmt) if hasattr(value, 'strftime') else '-'
 
+# Ensure instance directory exists for SQLite database
+instance_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance')
+if not os.path.exists(instance_dir):
+    os.makedirs(instance_dir)
+
 with app.app_context():
     db.create_all()
     init_default_settings()

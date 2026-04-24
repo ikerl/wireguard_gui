@@ -1,0 +1,3 @@
+This folder contains the SQLite database (wireguard.db) storing all application configuration.
+
+The database is created automatically on first run. Do not delete this folder unless you want to reset all data.
